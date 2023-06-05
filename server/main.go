@@ -47,12 +47,12 @@ func main() {
 	// route for sharing or posting product to fbook
 
 	router.POST("/share", func(c *gin.Context) {
-		controllers.shareProduct(c, oauthConfig)
+		controllers.ShareProduct(c, oauthConfig)
 	})
 
 	// Define the callback route for Facebook authorization
 	router.GET("/callback", func(c *gin.Context){
-		controllers.handleCallback(c, oauthConfig)
+		controllers.HandleCallback(c, oauthConfig)
 	})
 
 	router.Run() // listen and serve on 0.0.0.0:8080
