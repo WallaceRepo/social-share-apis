@@ -1,86 +1,58 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
-
+	"github.com/emrearmagan/go-social"
+	
 	"github.com/gin-gonic/gin"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/facebook"
 	"github.com/wallacerepo/social-share-apis/initializers"
+	"github.com/wallacerepo/social-share-apis/models"
 )
 
-var (
-	oauthConfig *oauth2.Config
-)
+func ShareProduct(c *gin.Context) {
 
-func ShareProduct (c *gin.Context) {
-
-	_, APP_ID, APP_SECRET, REDIRECT_URL := initializers.LoadEnvVariables()
-
-	// Initialize the OAuth2 configuration
-	oauthConfig = &oauth2.Config{
-		ClientID:     APP_ID,
-		ClientSecret: APP_SECRET,
-		RedirectURL:  REDIRECT_URL,
-		Scopes:       []string{"publish_actions"},
-		Endpoint:     facebook.Endpoint,
-	}
-	// Parse the request JSON
+	// Get data off req body
 	var body struct {
-		Product string
-		Title   string
+		UserID      int    `json:"userId"`
+		ProductID   int    `json:"productId"`
+		SocialMedia string `json:"socialMedia"`
+		Link        string `gorm:"not null"`
 	}
-	if err := c.BindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+
+	c.Bind(&body)
+
+	sharedProd := models.SharedProduct{
+		UserID:      body.UserID, // for testing perpose
+		ProductID:   body.ProductID,
+		SocialMedia: body.SocialMedia,
+	}
+
+	result := initializers.DB.Create(&sharedProd)
+
+	if result.Error != nil {
+		c.Status(400)
 		return
 	}
 
-	// Redirect the user to Facebook for authorization
-	authURL := oauthConfig.AuthCodeURL("state", oauth2.AccessTypeOnline)
-	c.Redirect(http.StatusFound, authURL)
+	// Retrieve the logged-in user from the session or database
+	// user := getCurrentUser(c)
+	user := body.UserID
+
+	// Get the selected social media platform from the request
+	// socialMedia := c.PostForm("social_media")
+
+	socialMedia := body.SocialMedia
+
+	// Initialize the go-social library with the appropriate social media platform
+	social := social.New(socialMedia)
+
+	// Redirect the user to the social media platform for authentication
+	authURL := social.AuthURL("YOUR_REDIRECT_URL")
+	c.Redirect(http.StatusTemporaryRedirect, authURL)
 }
 
-func HandleCallback(c *gin.Context) {
-	// Retrieve the authorization code from the query parameters
-	code := c.Query("code")
+func getCurrentUser(c *gin.Context) *models.User {
+	// Retrieve the user from the session or database based on your authentication mechanism
 
-	// Exchange the authorization code for an access token
-	token, err := oauthConfig.Exchange(oauth2.NoContext, code)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange authorization code"})
-		return
-	}
-
-	// Get the access token from the token response
-	accessToken := token.AccessToken
-
-	// Create the post message
-	// post := fmt.Sprintf("Check out this amazing product: %s", product.Name)
-	post := fmt.Sprintf("Check out this amazing product")
-
-	// Share the post
-	err = shareToFacebook(accessToken, post)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to share product"})
-		return
-	}
-
-	// Return a success response
-	c.JSON(http.StatusOK, gin.H{"message": "Product shared successfully"})
-}
-
-func shareToFacebook(accessToken string, post string) error {
-	url := fmt.Sprintf("https://graph.facebook.com/me/feed?access_token=%s&message=%s", accessToken, post)
-	resp, err := http.Post(url, "application/json", nil)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Failed to share post. Status: %s", resp.Status)
-	}
-
-	return nil
+	// Return the current user object
 }
