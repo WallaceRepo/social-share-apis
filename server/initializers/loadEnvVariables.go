@@ -5,18 +5,20 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+	
 )
 
-func LoadEnvVariables() (string, string, string, string) {
+func LoadEnvVariables() (string, string, string, string, string) {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 	DB := os.Getenv("DB")
-	APP_ID := os.Getenv("APP_ID")
-	APP_SECRET := os.Getenv("APP_SECRET")
-	REDIRECT_URL := os.Getenv("REDIRECT_URL")
+	CONSUMER_KEY :=os.Getenv("TWIT_CONSUMER_KEY")
+	CONSUMER_SECRET := os.Getenv("TWIT_CONSUMER_SECRET")
+	ACCESS_TOKEN := os.Getenv("TWIT_ACCESS_TOKEN")
+	ACCESS_SECRET := os.Getenv("TWIT_TOKEN_SECRET")
 
-	return DB, APP_ID, APP_SECRET, REDIRECT_URL
+	return DB, CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, ACCESS_SECRET
 }
 
